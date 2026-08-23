@@ -16,10 +16,19 @@ jobs:
           path: 'tdesktop'
           submodules: 'recursive'
 
+      - name: Install OpenSSL via vcpkg
+        run: |
+          vcpkg install openssl:x64-windows
+          vcpkg integrate install
+
       - name: Install Python Dependencies
         run: |
           pip install --upgrade pip
-          pip install jinja2 hashpumpy
+          pip install jinja2
+          # Передаем пути к OpenSSL компилятору для сборки hashpumpy
+          $env:INCLUDE="C:\vcpkg\installed\x64-windows\include"
+          $env:LIB="C:\vcpkg\installed\x64-windows\lib"
+          pip install hashpumpy
 
       - name: Prepare and Build Windows version
         shell: cmd
