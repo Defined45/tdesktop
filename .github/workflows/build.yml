@@ -1,47 +1,33 @@
-name: Build Telegram Desktop Windows
+name: Build Telegram Desktop Windows (Docker)
 on:
-  workflow_dispatch: # Кнопка ручного запуска с телефона
+  workflow_dispatch: # Запуск кнопкой с телефона
 
 jobs:
-  build-windows:
-    runs-on: windows-2022
+  build-win:
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout main repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Clone tdesktop full source
+      - name: Clone tdesktop source
         uses: actions/checkout@v4
         with:
           repository: 'telegramdesktop/tdesktop'
           path: 'tdesktop'
           submodules: 'recursive'
 
-      - name: Install OpenSSL via vcpkg
-        run: |
-          vcpkg install openssl:x64-windows
-          vcpkg integrate install
-
-      - name: Install Python Dependencies
-        run: |
-          pip install --upgrade pip
-          pip install jinja2
-          # Передаем пути к OpenSSL компилятору для сборки hashpumpy
-          $env:INCLUDE="C:\vcpkg\installed\x64-windows\include"
-          $env:LIB="C:\vcpkg\installed\x64-windows\lib"
-          pip install hashpumpy
-
-      - name: Prepare and Build Windows version
-        shell: cmd
+      - name: Run Build inside Official Docker Container
         run: |
           cd tdesktop
-          :: Запуск конфигурации сборщика Telegram с вашими ключами
-          python Launch.py -D TDESKTOP_API_ID=${{ secrets.TDESKTOP_API_ID }} -D TDESKTOP_API_HASH=${{ secrets.TDESKTOP_API_HASH }}
-          
-          :: Запуск компиляции через собранное решение (напрямую утилитой MSBuild)
-          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe" out\Telegram.slnx /p:Configuration=Release /p:Platform=x64
+          # Запускаем официальный контейнер Telegram для сборки под Windows
+          docker run --rm \
+            -v "$(pwd):/usr/src/tdesktop" \
+            -w /usr/src/tdesktop \
+            tdesktop/centos_env \
+            bash -c "Configure.sh -D TDESKTOP_API_ID=${{ secrets.TDESKTOP_API_ID }} -D TDESKTOP_API_HASH=${{ secrets.TDESKTOP_API_HASH }} -D TDESKTOP_BUILD_PLATFORM=win64 && Ninja"
 
-      - name: Upload EXE Binary
+      - name: Upload Telegram.exe Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: telegram-windows-x64-exe
+          name: telegram-windows-x64
           path: tdesktop/out/Release/Telegram.exe
