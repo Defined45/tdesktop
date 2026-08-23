@@ -30,7 +30,7 @@ jobs:
           "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe" out\Telegram.slnx /p:Configuration=Release /p:Platform=x64
 
       - name: Upload EXE Binary
-        uses: actions/artifacts@v4
+        uses: actions/upload-artifact@v4
         with:
           name: telegram-windows-x64-exe
           path: tdesktop/out/Release/Telegram.exe
