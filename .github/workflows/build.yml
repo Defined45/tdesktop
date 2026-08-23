@@ -1,0 +1,32 @@
+name: Build Telegram Desktop
+on:
+  workflow_dispatch: # Кнопка ручного запуска с телефона
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Docker
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker.io
+
+      - name: Clone tdesktop and Build inside Docker
+        run: |
+          git clone --recursive https://github.com
+          cd tdesktop
+          
+          docker run --rm \
+            -v "$(pwd):/usr/src/tdesktop" \
+            -w /usr/src/tdesktop \
+            tdesktop/centos_env \
+            bash -c "Configure.sh -D TDESKTOP_API_ID=${{ secrets.TDESKTOP_API_ID }} -D TDESKTOP_API_HASH=${{ secrets.TDESKTOP_API_HASH }} && Ninja"
+
+      - name: Upload Binary Artifact
+        uses: actions/artifacts@v4
+        with:
+          name: telegram-desktop-bin
+          path: tdesktop/out/Release/Telegram
